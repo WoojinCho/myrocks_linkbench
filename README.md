@@ -156,7 +156,7 @@ Running a Benchmark with MySQL
 In this section we will document the process of setting
 up a new MySQL database and running a benchmark with LinkBench.
 
-MySQL Setup
+MyRocks Setup
 -----------
 We need to create a new database and tables on the MySQL server.
 We'll create a new database called `linkdb` and
@@ -166,35 +166,38 @@ Run the following commands in the MySQL console:
     create database linkdb;
     use linkdb;
 
-    CREATE TABLE `linktable` (
-      `id1` bigint(20) unsigned NOT NULL DEFAULT '0',
-      `id2` bigint(20) unsigned NOT NULL DEFAULT '0',
-      `link_type` bigint(20) unsigned NOT NULL DEFAULT '0',
-      `visibility` tinyint(3) NOT NULL DEFAULT '0',
-      `data` varchar(255) NOT NULL DEFAULT '',
-      `time` bigint(20) unsigned NOT NULL DEFAULT '0',
-      `version` int(11) unsigned NOT NULL DEFAULT '0',
-      PRIMARY KEY (link_type, `id1`,`id2`),
-      KEY `id1_type` (`id1`,`link_type`,`visibility`,`time`,`id2`,`version`,`data`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=latin1 PARTITION BY key(id1) PARTITIONS 16;
 
-    CREATE TABLE `counttable` (
-      `id` bigint(20) unsigned NOT NULL DEFAULT '0',
-      `link_type` bigint(20) unsigned NOT NULL DEFAULT '0',
-      `count` int(10) unsigned NOT NULL DEFAULT '0',
-      `time` bigint(20) unsigned NOT NULL DEFAULT '0',
-      `version` bigint(20) unsigned NOT NULL DEFAULT '0',
-      PRIMARY KEY (`id`,`link_type`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+  CREATE TABLE `linktable` (
+    `id1` bigint(20) unsigned NOT NULL DEFAULT '0',
+    `id1_type` int(10) unsigned NOT NULL DEFAULT '0',
+    `id2` bigint(20) unsigned NOT NULL DEFAULT '0',
+    `id2_type` int(10) unsigned NOT NULL DEFAULT '0',
+    `link_type` bigint(20) unsigned NOT NULL DEFAULT '0',
+    `visibility` tinyint(3) NOT NULL DEFAULT '0',
+    `data` varchar(255) NOT NULL DEFAULT '',
+    `time` bigint(20) unsigned NOT NULL DEFAULT '0',
+    `version` int(11) unsigned NOT NULL DEFAULT '0',
+    PRIMARY KEY (link_type, `id1`,`id2`) COMMENT 'cf_link_pk',
+    KEY `id1_type` (`id1`,`link_type`,`visibility`,`time`,`version`,`data`) COMMENT 'rev:cf_link_id1_type'
+  ) ENGINE=RocksDB DEFAULT COLLATE=latin1_bin; 
 
-    CREATE TABLE `nodetable` (
-      `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-      `type` int(10) unsigned NOT NULL,
-      `version` bigint(20) unsigned NOT NULL,
-      `time` int(10) unsigned NOT NULL,
-      `data` mediumtext NOT NULL,
-      PRIMARY KEY(`id`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+  CREATE TABLE `counttable` (
+    `id` bigint(20) unsigned NOT NULL DEFAULT '0',
+    `link_type` bigint(20) unsigned NOT NULL DEFAULT '0',
+    `count` int(10) unsigned NOT NULL DEFAULT '0',
+    `time` bigint(20) unsigned NOT NULL DEFAULT '0',
+    `version` bigint(20) unsigned NOT NULL DEFAULT '0',
+    PRIMARY KEY (`id`,`link_type`)
+  ) ENGINE=RocksDB DEFAULT CHARSET=latin1;
+
+  CREATE TABLE `nodetable` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `type` int(10) unsigned NOT NULL,
+    `version` bigint(20) unsigned NOT NULL,
+    `time` int(10) unsigned NOT NULL,
+    `data` mediumtext NOT NULL,
+    PRIMARY KEY(`id`)
+  ) ENGINE=RocksDB DEFAULT CHARSET=latin1;
 
 You may want to set up a special database user account for benchmarking:
 
@@ -202,16 +205,6 @@ You may want to set up a special database user account for benchmarking:
     CREATE USER 'linkbench'@'localhost' IDENTIFIED BY 'mypassword';
     -- Grant all privileges on linkdb to this user
     GRANT ALL ON linkdb TO 'linkbench'@'localhost'
-
-If you want to obtain representative benchmark results, we highly
-recommend that you invest some time configuring and tuning MySQL.
-MySQL performance tuning can be complex and a comprehensive guide
-is beyond the scope of this readme, but here are a few basic guidelines:
-* Read the [Optimization section of the MySQL user manual](http://dev.mysql.com/doc/refman/5.6/en/optimization.html).
-* Make sure you have a sensible size setting for the [InnoDB buffer pool size](http://dev.mysql.com/doc/refman/5.6/en/optimizing-innodb-diskio.html),
-  so as to reduce disk I/O.
-* Table partitioning (as shown above) can eliminate some bottlenecks
-  that occur with LinkBench where the linktable is heavily accessed.
 
 Configuration Files
 -------------------
