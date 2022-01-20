@@ -254,31 +254,6 @@ First we need to do an initial load of data using our new config file:
 
     ./bin/linkbench -c config/MyConfig.properties -l
 
-This will take a while to load, and you should get frequent progress updates.
-Once loading is finished you should see a notification like:
-
-    LOAD PHASE COMPLETED.  Loaded 10000000 nodes (Expected 10000000).
-      Loaded 47423071 links (4.74 links per node).  Took 620.4 seconds.
-      Links/second = 76435
-
-At the end LinkBench reports a range of statistics on load time that are
-of limited interest at this stage.
-
-
-You can significantly speed up the LinkBench load phase by making these
-temporary changes in the MySQL command shell before loading:
-
-    alter table linktable drop key `id1_type`;
-    set global innodb_flush_log_at_trx_commit = 2;
-    set global sync_binlog = 0;
-
-After loading you should revert the changes:
-
-    set global innodb_flush_log_at_trx_commit = 1;
-    set global sync_binlog = 1;
-    alter table linktable add key `id1_type`
-      (`id1`,`link_type`,`visibility`,`time`,`id2`,`version`,`data`);
-
 Request Phase
 -------------
 Now you can do some benchmarking.
